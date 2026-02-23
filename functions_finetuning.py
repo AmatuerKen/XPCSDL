@@ -96,6 +96,8 @@ def train_with_scheduler_bestaccurary_memory_monitor(model, optimizer, loss_fn, 
 
     best_val_metric = np.inf
     
+    print("trianing new model with scheduler_bestaccurary_memory_monitor")
+
     for epoch in range(n_epochs):
         total_loss = 0.0
         metric.reset()

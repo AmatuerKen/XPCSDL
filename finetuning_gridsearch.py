@@ -1,3 +1,10 @@
+import numpy as np
+import zarr
+import matplotlib.pyplot as plt
+
+import optuna
+from functools import partial
+
 import torch
 from torch.utils.data import Dataset, Subset, random_split, DataLoader
 from tqdm import tqdm
@@ -15,6 +22,13 @@ from torch.amp import autocast, GradScaler
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
+
+# Check if BF16 is supported
+if torch.cuda.is_available():
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+    print(f"BF16 supported: {torch.cuda.is_bf16_supported()}")
+else:
+    print("CUDA not available")
 
 dt_max = 8
 
@@ -42,11 +56,10 @@ val_set   = Subset(dataset, idx_val)
 test_set  = Subset(dataset, idx_test)
 #plot_target_distribution(train_set, val_set, test_set)
 
-
 def objective(trial, train_set, val_set, saving_memory = False):
 
     n_conv = trial.suggest_int("n_conv", 3, 9)
-    base_channels = trial.suggest_categorical("base_channels", [4, 16, 32, 64])
+    base_channels = trial.suggest_categorical("base_channels", [4, 8, 16, 32, 64])
     kernel_size = trial.suggest_categorical("kernel_size", [3, 5, 7])
 
     #n_conv = 3
@@ -111,14 +124,13 @@ objective_with_data = lambda trial: objective(
 
 objective_with_data = partial(objective, train_set=train_set, val_set=val_set, saving_memory=False)
 
-
 torch.manual_seed(42)
 
 search_space = {
-    "n_conv": [8],
+    "n_conv": [3],
     "base_channels": [16],
-    "kernel_size": [7],
-    "batch_size": [32],
+    "kernel_size": [3, 5, 7],
+    "batch_size": [8, 16, 32],
 }
 
 sampler = GridSampler(search_space)
@@ -131,11 +143,16 @@ print("Best trial:")
 print(study.best_params)
 
 print("Best validation loss:", study.best_value)
-#np.savez('./step3_finetuning/optuna_best_study_7.npz', study = study)
+np.savez('./step3_finetuning/optuna_best_study_10.npz', study = study)
 
-#3, 4 ...
-#4, 4 ...
-#5, 4 ...
-#6, 4 ...
-#7, 4 ...
-#8, 4 ...
+#3, 4 ...1
+#4, 4 ...2
+#5, 4 ...3
+#6, 4 ...4
+#7, 4 ...5
+#8, 4 ...6
+#3, 8 ...7
+#4, 8 ...8
+#5-8, 8 ...9
+#can't run 9 layers locally
+#3, 16 ...10
