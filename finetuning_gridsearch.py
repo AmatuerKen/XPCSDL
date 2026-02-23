@@ -127,8 +127,8 @@ objective_with_data = partial(objective, train_set=train_set, val_set=val_set, s
 torch.manual_seed(42)
 
 search_space = {
-    "n_conv": [3],
-    "base_channels": [16],
+    "n_conv": [3, 4, 5, 6, 7, 8, 9],
+    "base_channels": [8, 16, 32, 64],
     "kernel_size": [3, 5, 7],
     "batch_size": [8, 16, 32],
 }
