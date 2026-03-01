@@ -56,6 +56,7 @@ val_set   = Subset(dataset, idx_val)
 test_set  = Subset(dataset, idx_test)
 #plot_target_distribution(train_set, val_set, test_set)
 
+
 def objective(trial, train_set, val_set, saving_memory = False):
 
     n_conv = trial.suggest_int("n_conv", 3, 9)
@@ -79,6 +80,7 @@ def objective(trial, train_set, val_set, saving_memory = False):
     print(f"Parameter memory (GB): {total_params * 4 / 1024**3:.2f} GB")
     #print("Parameter type:", next(model.parameters()).dtype)
     
+    trial.set_user_attr("num_parameters", total_params)
 
     print("before training")
     #print(torch.cuda.memory_summary())
@@ -119,40 +121,31 @@ def objective(trial, train_set, val_set, saving_memory = False):
 
     return validation_accuracy
 
+
 objective_with_data = lambda trial: objective(
     trial, train_set=train_set, val_set=val_set, saving_memory=True)
 
 objective_with_data = partial(objective, train_set=train_set, val_set=val_set, saving_memory=False)
 
+
 torch.manual_seed(42)
 
-search_space = {
-    "n_conv": [3, 4, 5, 6, 7, 8, 9],
-    "base_channels": [8, 16, 32, 64],
-    "kernel_size": [3, 5, 7],
-    "batch_size": [8, 16, 32],
-}
+study = optuna.create_study(direction="minimize")
 
-sampler = GridSampler(search_space)
+missing_combinations = [
 
-study = optuna.create_study(direction="minimize", sampler=sampler)
+    {"n_conv":8, "base_channels":16, "kernel_size":7, "batch_size":16},
 
-study.optimize(objective_with_data)
+    {"n_conv":8, "base_channels":16, "kernel_size":3, "batch_size":32},
+]
+
+for params in missing_combinations:
+    study.enqueue_trial(params)
+
+study.optimize(objective_with_data, n_trials=len(missing_combinations))
 
 print("Best trial:")
 print(study.best_params)
 
 print("Best validation loss:", study.best_value)
-np.savez('./step3_finetuning/optuna_best_study_10.npz', study = study)
-
-#3, 4 ...1
-#4, 4 ...2
-#5, 4 ...3
-#6, 4 ...4
-#7, 4 ...5
-#8, 4 ...6
-#3, 8 ...7
-#4, 8 ...8
-#5-8, 8 ...9
-#can't run 9 layers locally
-#3, 16 ...10
+np.savez('./step3_finetuning/optuna_best_study_17.npz', study = study)
